@@ -98,7 +98,7 @@ export default function LessonSidebar({
                 ) : isCurrent ? (
                   <motion.div
                     animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ repeat: Infinity, duration: 2 }}
+                    transition={{ repeat: Infinity, duration: 2, type: "tween" }}
                     className="w-5 h-5 flex items-center justify-center bg-current rounded-full"
                   >
                     <div className="w-2 h-2 bg-white rounded-full" />

@@ -50,6 +50,12 @@ const lessonSchema = new mongoose.Schema(
       timeLimit: { type: Number, default: 30 }, // seconds
       attempts: { type: Number, default: 3 },
     },
+    passingThreshold: {
+      type: Number,
+      default: 0.60,
+      min: 0,
+      max: 1,
+    },
     // Points earned for completing
     pointsReward: {
       type: Number,

@@ -1,0 +1,13 @@
+@echo off
+echo Starting SignLangv2 Services...
+
+echo Starting Backend Server (Port 5000)...
+start "Backend Server" cmd /k "cd server && npm install && npm run dev"
+
+echo Starting Frontend Dev Server (Port 3000)...
+start "Frontend Client" cmd /k "cd client && npm install && npm run dev"
+
+echo Starting AI Service (Port 8000)...
+start "AI Service" cmd /k "cd ai-service && pip install -r requirements.txt && python api.py"
+
+echo All services are starting up in separate windows!

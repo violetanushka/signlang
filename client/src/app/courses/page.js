@@ -15,18 +15,27 @@ export default function CoursesPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchCourses = async () => {
       try {
         const res = await api.get("/courses");
-        setCourses(res.data.courses || []);
+        if (mounted) {
+          setCourses(res.data.courses || []);
+        }
       } catch (err) {
-        console.error("Failed to load courses", err);
+        console.warn("Courses load failed:", err.message);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
+
     fetchCourses();
-  }, []);
+
+    return () => {
+      mounted = false;
+    };
+  }, []); // ✅ IMPORTANT: empty dependency
 
   const filteredCourses = courses.filter((c) => {
     const matchFilter = filter === "all" || c.level === filter;

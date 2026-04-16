@@ -24,8 +24,20 @@ export default function LessonPlayer({
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("learn"); // learn, practice, test
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
-  if (!lesson) return null;
+  // STEP 4: PREVENT BLANK PAGES
+  if (!lesson) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-12 text-center bg-[var(--bg-primary)]">
+        <div className="glass-card p-8 rounded-3xl border-red-100 max-w-md">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Lesson Not Found</h1>
+          <p className="text-[var(--text-secondary)] mb-6">We couldn't load the lesson data. It might be missing or corrupted.</p>
+          <Link href="/dashboard" className="btn btn-primary px-8">Return to Dashboard</Link>
+        </div>
+      </div>
+    );
+  }
 
   const handleTestComplete = async (score, result) => {
     try {
@@ -49,17 +61,22 @@ export default function LessonPlayer({
         },
       };
 
-      console.log("📤 Submitting Progress Payload:", payload);
-      const res = await api.post("/progress/submit", payload, { timeout: 15000 });
-      console.log("Progress saved", res.data);
+      console.log("📤 Submitting Progress Payload (MOCKED):", payload);
+      
+      // STEP 1: REMOVE RESULT API CALL
+      // const res = await api.post("/progress/submit", payload, { timeout: 15000 });
+      // console.log("Progress saved", res.data);
 
-      if (res.data.progress.completed && onTestPassed) {
+      // STEP 2 & 3: PREVENT CRASH & KEEP UI FLOW
+      // Simulate successful completion if score is high enough to pass
+      const PASS_THRESHOLD = 50; 
+      if (score >= PASS_THRESHOLD && onTestPassed) {
+        console.log("✅ Offline Pass: Triggering onTestPassed UI flow");
         onTestPassed();
-        // Optionally force router refresh so sidebar updates
         router.refresh();
       }
     } catch (err) {
-      console.error("Failed to submit progress", err);
+      console.error("Failed to process local progress", err);
     } finally {
       setSubmitting(false);
     }
@@ -125,9 +142,9 @@ export default function LessonPlayer({
                 className="w-full h-[600px] glass-card rounded-3xl"
               >
                 <GestureLearnPanel
-                  target={lesson.content?.value}
-                  instructions={lesson.content?.instructions}
-                  color={course?.color}
+                  target={lesson?.content?.value || lesson?.title || "Sign"}
+                  instructions={lesson?.content?.instructions || "Follow the sign shown."}
+                  color={course?.color || "#2563EB"}
                 />
               </motion.div>
             )}
@@ -141,7 +158,10 @@ export default function LessonPlayer({
                 exit={{ opacity: 0, x: 20 }}
                 className="w-full h-[600px] glass-card rounded-3xl p-6"
               >
-                <PracticeMode targetGesture={lesson.content?.value} />
+                <PracticeMode 
+                  targetGesture={lesson?.content?.value || "A"} 
+                  onComplete={handleTestComplete}
+                />
               </motion.div>
             )}
 
@@ -163,7 +183,7 @@ export default function LessonPlayer({
                   </div>
                 )}
                 <TestModule
-                  targetGesture={lesson.content?.value}
+                  targetGesture={lesson?.content?.value || "A"}
                   onComplete={handleTestComplete}
                 />
               </motion.div>

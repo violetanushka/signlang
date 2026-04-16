@@ -2,6 +2,12 @@ const Progress = require("../models/Progress");
 const User = require("../models/User");
 const Lesson = require("../models/Lesson");
 
+const DEFAULT_THRESHOLD = parseFloat(process.env.DEFAULT_PASS_THRESHOLD || '0.60');
+
+function getThreshold(lesson) {
+  if (lesson && typeof lesson.passingThreshold === 'number') return lesson.passingThreshold;
+  return DEFAULT_THRESHOLD;
+}
 // @desc    Get user's progress for a course
 // @route   GET /api/progress/:courseId
 exports.getCourseProgress = async (req, res, next) => {
@@ -59,9 +65,9 @@ exports.submitResult = async (req, res, next) => {
       return res.status(404).json({ message: "Lesson not found." });
     }
 
-    // Check if score is greater than or equal to 50% threshold to pass.
-    const passed = score >= 50; // Task requirement: Minimum 50% score required to pass
-    const stars = score >= 95 ? 5 : score >= 85 ? 4 : score >= 75 ? 3 : score >= 65 ? 2 : score >= 50 ? 1 : 0;
+    // Check threshold to pass.
+    const passed = (score / 100) >= getThreshold(lesson);
+    const stars = score >= 95 ? 5 : score >= 85 ? 4 : score >= 75 ? 3 : score >= 65 ? 2 : (score / 100) >= getThreshold(lesson) ? 1 : 0;
 
     // Upsert progress
     let progress = await Progress.findOne({

@@ -7,27 +7,55 @@ let isMediaPipeInitializing = false;
  * Hook to initialize and manage MediaPipe Hands with a native camera feed.
  * @param {HTMLVideoElement} videoRef - Ref to the video element
  * @param {boolean} isRunning - whether tracking should actively process frames
+ * @param {Function} onLandmarks - callback for real-time landmark updates (prevents re-render loops)
  */
-export default function useMediaPipe(videoRef, isRunning = true) {
+export default function useMediaPipe(videoRef, isRunning = true, onLandmarks = null) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(null);
-  const [landmarks, setLandmarks] = useState(null);
   
+  // Landmarks are now stored in a Ref to avoid high-frequency re-renders
+  const landmarksRef = useRef(null);
   const handsRef = useRef(null);
   const streamRef = useRef(null);
   const animationFrameIdRef = useRef(null);
   const isComponentMounted = useRef(true);
+  const lastUpdateRef = useRef(0);
+  const onResultsRef = useRef(null);
 
   // Callback passed to MediaPipe to handle results
   const onResults = useCallback((results) => {
     if (!isRunning || !isComponentMounted.current) return;
 
+    // STEP 1: THROTTLE UPDATES (Only update every 100ms for heavy processing)
+    const now = Date.now();
+    // For local logic, we can go faster if needed, but 100ms is stable.
+    if (now - lastUpdateRef.current < 100) return;
+
+    let newLandmarks = null;
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-      setLandmarks(results.multiHandLandmarks[0]);
-    } else {
-      setLandmarks(null);
+      const lms = results.multiHandLandmarks[0];
+      if (lms.length >= 21) {
+        newLandmarks = lms.slice(0, 21);
+      }
     }
-  }, [isRunning]);
+
+    console.log("LANDMARK COUNT:", newLandmarks?.length);
+
+    // STEP 2: UPDATE REF (NO STATE UPDATE = NO RENDER LOOP)
+    landmarksRef.current = newLandmarks;
+    
+    // STEP 3: DIRECT EMISSION
+    if (onLandmarks) {
+        onLandmarks(newLandmarks);
+    }
+    
+    lastUpdateRef.current = now;
+  }, [isRunning, onLandmarks]);
+
+  // Maintain a ref to the latest onResults to avoid re-initializing MediaPipe
+  useEffect(() => {
+    onResultsRef.current = onResults;
+  }, [onResults]);
 
   useEffect(() => {
     isComponentMounted.current = true;
@@ -65,11 +93,13 @@ export default function useMediaPipe(videoRef, isRunning = true) {
         hands.setOptions({
           maxNumHands: 1,
           modelComplexity: 0,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5,
+          minDetectionConfidence: 0.7,
+          minTrackingConfidence: 0.6,
         });
 
-        hands.onResults(onResults);
+        hands.onResults((res) => {
+          if (onResultsRef.current) onResultsRef.current(res);
+        });
         await hands.initialize(); // Ensure Wasm is ready
         handsRef.current = hands;
 
@@ -165,7 +195,7 @@ export default function useMediaPipe(videoRef, isRunning = true) {
       
       setIsLoaded(false);
     };
-  }, [videoRef, isRunning, onResults]);
+  }, [videoRef, isRunning]); 
 
-  return { isLoaded, landmarks, error };
+  return { isLoaded, landmarks: landmarksRef.current, error };
 }

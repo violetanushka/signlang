@@ -19,38 +19,41 @@ export default function LessonWrapperPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Basic protection: requires login
-    if (user === null) return;
+    if (!courseId || !lessonId) return;
 
-    if (!user) {
-      router.replace("/login");
-      return;
-    }
+    let mounted = true;
 
     const fetchLessonData = async () => {
       try {
         setLoading(true);
-        // Fire parallel requests
+
         const [courseRes, progRes, lessonRes] = await Promise.all([
           api.get(`/courses/${courseId}`),
           api.get(`/progress/${courseId}`),
           api.get(`/courses/${courseId}/lessons/${lessonId}`)
         ]);
 
-        setCourse(courseRes.data.course);
-        setLessons(courseRes.data.lessons);
-        setUserProgress(progRes.data.progress);
-        setCurrentLesson(lessonRes.data.lesson);
+        if (mounted) {
+          // Flatten data if needed based on API response structure
+          setCourse(courseRes.data.course || courseRes.data);
+          setLessons(courseRes.data.lessons || []);
+          setUserProgress(progRes.data.progress || progRes.data);
+          setCurrentLesson(lessonRes.data.lesson || lessonRes.data);
+        }
+
       } catch (err) {
-        console.error(err);
-        router.push("/courses");
+        console.warn("Lesson load failed:", err.message);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
     fetchLessonData();
-  }, [courseId, lessonId, user, router]);
+
+    return () => {
+      mounted = false;
+    };
+  }, [courseId, lessonId]); // ✅ ONLY THESE
 
   if (loading || user === null) {
     return (

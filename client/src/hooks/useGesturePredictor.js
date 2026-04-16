@@ -1,81 +1,153 @@
 import { useState, useCallback, useRef } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 
-const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_URL || "http://localhost:8000";
+const THROTTLE_MS = 300; 
+
+function normalize(lms) {
+  const base = lms[0];
+  return lms.map(p => ({
+    x: p.x - base.x,
+    y: p.y - base.y,
+    z: p.z - base.z
+  }));
+}
 
 /**
- * Hook to send landmarks to the Python AI Microservice for prediction or evaluation.
+ * useGesturePredictor
+ * Hybrid gesture recognition using server-side ensemble AI.
+ * Implements client-side throttling and stability smoothing.
  */
 export default function useGesturePredictor() {
   const [prediction, setPrediction] = useState(null);
   const [evaluation, setEvaluation] = useState(null);
-  const [isPredicting, setIsPredicting] = useState(false);
   const [error, setError] = useState(null);
-  
-  // To avoid spamming the backend, we throttle requests
-  const lastRequestTime = useRef(0);
-  const THROTTLE_MS = 250; // Max 4 FPS sent to server to save resources
 
-  const predictGesture = useCallback(async (landmarks) => {
-    if (!landmarks || landmarks.length === 0) return;
+  const predHistoryRef = useRef([]);
+  const lastCallRef = useRef(0);
+  const stableCountRef = useRef(0);
+  const lastStablePredictionRef = useRef(null);
+
+  /**
+   * smoothPrediction
+   * 5-frame sliding window majority vote to filter jitter.
+   */
+  const smoothPrediction = (newPred) => {
+    if (!newPred) return null;
     
-    // Throttle
-    const now = Date.now();
-    if (now - lastRequestTime.current < THROTTLE_MS) return;
-    lastRequestTime.current = now;
-
-    try {
-      setIsPredicting(true);
-      setError(null);
-      
-      const payload = {
-        landmarks: landmarks.map(lm => ({ x: lm.x, y: lm.y, z: lm.z }))
-      };
-      
-      const res = await axios.post(`${AI_SERVICE_URL}/api/predict`, payload);
-      setPrediction(res.data);
-    } catch (err) {
-      console.error("Prediction Error:", err);
-      setError("AI Service unavailable");
-    } finally {
-      setIsPredicting(false);
+    predHistoryRef.current.push(newPred);
+    if (predHistoryRef.current.length > 5) {
+      predHistoryRef.current.shift();
     }
-  }, []);
 
-  const evaluateGesture = useCallback(async (landmarks, targetGesture) => {
-    if (!landmarks || landmarks.length === 0 || !targetGesture) return null;
+    const counts = {};
+    predHistoryRef.current.forEach(p => {
+      counts[p] = (counts[p] || 0) + 1;
+    });
+
+    // Return the most frequent prediction in the history
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+  };
+
+  const estimateGesture = useCallback(async (landmarks) => {
+    console.log("Frontend Input Landmarks:", landmarks);
     
-    const now = Date.now();
-    if (now - lastRequestTime.current < THROTTLE_MS) return null;
-    lastRequestTime.current = now;
-
-    try {
-      setIsPredicting(true);
-      setError(null);
-      
-      const payload = {
-        target_gesture: targetGesture,
-        landmarks: landmarks.map(lm => ({ x: lm.x, y: lm.y, z: lm.z }))
-      };
-      
-      const res = await axios.post(`${AI_SERVICE_URL}/api/evaluate`, payload);
-      setEvaluation(res.data);
-      return res.data;
-    } catch (err) {
-      console.error("Evaluation Error:", err);
-      setError("AI Service unavailable");
+    if (!landmarks || landmarks.length !== 21) {
+      console.warn("Input Landmarks length invalid. Check MediaPipe / camera permission");
+      setPrediction({ predicted_class: "No Hand Detected", confidence: 0 });
       return null;
-    } finally {
-      setIsPredicting(false);
     }
-  }, []);
+
+    const now = Date.now();
+    if (now - lastCallRef.current < THROTTLE_MS) {
+      return prediction; 
+    }
+    lastCallRef.current = now;
+
+    try {
+      // 1. Normalize landmarks (subtract wrist coordinates) using standalone fn
+      const normalizedLandmarks = normalize(landmarks);
+
+      // Ensure exactly 21 landmarks are sent
+      const payloadLandmarks = normalizedLandmarks.slice(0, 21);
+
+      // 6. Ensure no raw landmarks are sent without normalization
+      const res = await api.post("/assessment/predict", { landmarks: payloadLandmarks });
+      const rawResult = res.data;
+
+      if (!rawResult) throw new Error("Empty response from AI service");
+
+      // 4. Temporarily disable KNN (use CNN only)
+      let finalPred = rawResult.cnn_class || rawResult.predicted_class;
+      let conf = rawResult.cnn_confidence !== undefined ? rawResult.cnn_confidence : rawResult.confidence;
+
+      // 2. Add confidence threshold (ignore < 0.5)
+      // 5. Return "unknown" if confidence low
+      if (conf < 0.5) {
+        finalPred = "unknown";
+      }
+
+      // Apply 5-frame smoothing
+      const smoothed = smoothPrediction(finalPred);
+
+      // Require 2 consecutive frames of the SAME smoothed result to trigger a state update
+      // This eliminates "prediction flicker" 
+      if (smoothed === lastStablePredictionRef.current) {
+        stableCountRef.current++;
+      } else {
+        stableCountRef.current = 0;
+        lastStablePredictionRef.current = smoothed;
+      }
+
+      const result = {
+        ...rawResult,
+        predicted_class: smoothed,
+        confidence: conf,
+        isStable: stableCountRef.current >= 2
+      };
+
+      setPrediction(result);
+      setError(null);
+      return result;
+
+    } catch (err) {
+      console.warn("Gesture prediction failed:", err.message);
+      setError(err.message);
+      return null;
+    }
+  }, [prediction]);
+
+  /**
+   * evaluateGesture — predicts, then scores the result against a target.
+   */
+  const evaluateGesture = useCallback(
+    async (landmarks, targetGesture) => {
+      const result = await estimateGesture(landmarks);
+      
+      if (!result || !targetGesture) return null;
+
+      const target = targetGesture.toUpperCase();
+      const predicted = (result.predicted_class || "").toUpperCase();
+      const isMatch = predicted === target;
+
+      const evalResult = {
+        ...result,
+        score: isMatch && result.confidence > 0.6 ? 100 : 0,
+        passed: isMatch && result.confidence > 0.6 && result.isStable,
+        message: isMatch ? "Correct!" : `Detected: ${result.predicted_class}`,
+      };
+
+      setEvaluation(evalResult);
+      return evalResult;
+    },
+    [estimateGesture]
+  );
 
   return {
     prediction,
     evaluation,
-    isPredicting,
     error,
-    predictGesture,
-    evaluateGesture
+    estimateGesture,
+    evaluateGesture,
+    isPredicting: false 
   };
 }

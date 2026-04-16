@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import useMediaPipe from "@/hooks/useMediaPipe";
 import HandLandmarkOverlay from "./HandLandmarkOverlay";
 import { HiOutlineVideoCameraSlash } from "react-icons/hi2";
@@ -17,14 +17,16 @@ export default function WebcamCapture({
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   
-  const { isLoaded, landmarks, error } = useMediaPipe(videoRef, isActive);
-
-  // Bubble up landmarks to parent
-  useEffect(() => {
-    if (isActive && onLandmarks) {
-      onLandmarks(landmarks);
-    }
-  }, [landmarks, isActive, onLandmarks]);
+  const [overlayLandmarks, setOverlayLandmarks] = useState(null);
+  
+  // Initialize hook with direct callback support
+  const { isLoaded, error } = useMediaPipe(videoRef, isActive, (lm) => {
+    // Bubble up to parent (handles high-frequency refs)
+    if (onLandmarks) onLandmarks(lm);
+    
+    // Update local state for overlay rendering (throttle handled in hook)
+    setOverlayLandmarks(lm);
+  });
 
   return (
     <div 
@@ -41,9 +43,9 @@ export default function WebcamCapture({
       />
 
       {/* Canvas Overlay for Hand Bones */}
-      {showOverlay && landmarks && isActive && (
+      {showOverlay && overlayLandmarks && isActive && (
         <HandLandmarkOverlay 
-          landmarks={landmarks} 
+          landmarks={overlayLandmarks} 
           containerRef={containerRef} 
         />
       )}

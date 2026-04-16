@@ -14,13 +14,26 @@ const app = express();
 const autoSeed = require("./seeds/autoSeed");
 
 connectDB()
-  .then(() => {
+  .then(async () => {
     // Run auto-seed
-    return autoSeed();
+    if (process.env.NODE_ENV !== 'production') {
+      await autoSeed();
+      console.log('Dev seed complete.');
+    }
   })
   .catch(err => {
     console.error("❌ Fatal Database Connection Error on Startup");
   });
+
+// AI service warmup — prevents cold-start timeouts
+const http = require('http');
+setTimeout(() => {
+  http.get(process.env.AI_SERVICE_URL ? process.env.AI_SERVICE_URL + '/warmup' : 'http://localhost:8000/warmup', (res) => {
+    console.log('AI service warmup status:', res.statusCode);
+  }).on('error', () => {
+    console.warn('AI service not reachable yet — start uvicorn if running locally.');
+  });
+}, 3000);
 
 // ─── Middleware ────────────────────────────────
 app.use(helmet());
@@ -33,12 +46,22 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // ─── Rate Limiting ────────────────────────────
-const limiter = rateLimit({
+// Standard API limiter
+const standardLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: 500, // Increased from 100
   message: { message: "Too many requests, please try again later." },
 });
-app.use("/api/", limiter);
+
+// High-frequency limiter for real-time assessment
+const assessmentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 1000, // Allow 1000 requests per 15 mins for gestures
+  message: { message: "Gesture prediction limit reached. Please slow down." },
+});
+
+app.use("/api/", standardLimiter);
+app.use("/api/assessment/predict", assessmentLimiter);
 
 // ─── Routes ───────────────────────────────────
 app.use("/api/auth", require("./routes/authRoutes"));
@@ -46,6 +69,7 @@ app.use("/api/courses", require("./routes/courseRoutes"));
 app.use("/api/progress", require("./routes/progressRoutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 app.use("/api/certificates", require("./routes/certificateRoutes"));
+app.use("/api/assessment", require("./routes/assessmentRoutes"));
 
 // ─── Health Check ─────────────────────────────
 app.get("/api/health", (req, res) => {

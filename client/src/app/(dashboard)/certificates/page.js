@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import api from "@/lib/api";
 import Navbar from "@/components/ui/Navbar";
-import { HiOutlineAcademicCap, HiOutlineDownload, HiOutlineEye } from "react-icons/hi2";
+import { HiOutlineAcademicCap, HiOutlineArrowDownTray, HiOutlineEye } from "react-icons/hi2";
 
 export default function CertificatesPage() {
   const { user } = useAuth();
@@ -109,7 +109,7 @@ export default function CertificatesPage() {
                     </Link>
                     {/* Simulated Download button (requires separate PDF generation logic for production) */}
                     <button className="btn btn-primary flex-1 flex items-center justify-center gap-2">
-                      <HiOutlineDownload className="w-4 h-4" /> Download PDF
+                      <HiOutlineArrowDownTray className="w-4 h-4" /> Download PDF
                     </button>
                   </div>
                 </div>

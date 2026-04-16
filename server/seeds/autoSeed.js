@@ -30,6 +30,8 @@ const aslDescriptions = {
   X: "Hold up your index finger and bend/hook it like a claw or question mark.",
   Y: "Extend your thumb and pinky finger outward. Keep the other fingers folded.",
   Z: "Point your index finger and trace the letter Z in the air.",
+  space: "Hold your hand slightly open, pushing forward/sideways to indicate a space.",
+  del: "Make a flat hand and swipe it across like erasing a whiteboard, or point thumb back."
 };
 
 const intermediateLessons = [
@@ -114,20 +116,21 @@ module.exports = async function autoSeed() {
       order: 3,
     });
 
-    // Beginner Lessons — ASL Alphabet A–Z
-    const beginnerLessonDocs = aslAlphabet.map((letter, index) => ({
+    // Beginner Lessons — ASL Alphabet A–Z + space + del
+    const beginnerLabels = [...aslAlphabet, "space", "del"];
+    const beginnerLessonDocs = beginnerLabels.map((letter, index) => ({
       courseId: beginnerCourse._id,
-      title: `Letter ${letter}`,
-      description: `Learn to sign the letter ${letter} in American Sign Language.`,
+      title: letter.length > 1 ? `Sign: ${letter}` : `Letter ${letter}`,
+      description: `Learn to sign ${letter} in American Sign Language.`,
       order: index + 1,
       content: {
-        type: "letter",
+        type: letter.length > 1 ? "word" : "letter",
         value: letter,
         instructions: aslDescriptions[letter],
-        subtitles: `This is the ASL sign for the letter ${letter}. ${aslDescriptions[letter]}`,
+        subtitles: `This is the ASL sign for ${letter}. ${aslDescriptions[letter]}`,
       },
       gestureData: {
-        altText: `Hand demonstration for ASL letter ${letter}`,
+        altText: `Hand demonstration for ${letter}`,
       },
       assessmentConfig: {
         requiredAccuracy: 50,
@@ -165,7 +168,7 @@ module.exports = async function autoSeed() {
     await Lesson.insertMany(intermediateLessonDocs);
 
     console.log("✅  Auto-seed complete!");
-    console.log(`   → Beginner: ${aslAlphabet.length} lessons (A–Z)`);
+    console.log(`   → Beginner: ${beginnerLabels.length} lessons (A–Z + space/del)`);
     console.log(`   → Intermediate: ${intermediateLessons.length} lessons`);
     console.log("   → Pro: placeholder (coming soon)\n");
   } catch (err) {

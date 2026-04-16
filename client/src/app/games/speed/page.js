@@ -48,9 +48,15 @@ export default function SpeedGame() {
     setGameEnded(false);
     setIsPlaying(true);
   };
+  const lastCallRef = useRef(0);
+  const THROTTLE_MS = 300;
 
   const handleLandmarks = async (landmarks) => {
     if (!isPlaying || evaluationCompleteRef.current) return;
+
+    const now = Date.now();
+    if (now - lastCallRef.current < THROTTLE_MS) return;
+    lastCallRef.current = now;
 
     try {
       const res = await evaluateGesture(landmarks, targetLetter);
