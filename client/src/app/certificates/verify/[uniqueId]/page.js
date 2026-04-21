@@ -7,6 +7,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import Navbar from "@/components/ui/Navbar";
 import { HiOutlineCheckBadge, HiOutlineXCircle } from "react-icons/hi2";
+import { APP_NAME } from "@/lib/constants";
 
 export default function VerifyCertificatePage() {
   const { uniqueId } = useParams();
@@ -44,7 +45,7 @@ export default function VerifyCertificatePage() {
           
           <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold text-[var(--text-primary)]">Credential Verification</h1>
-            <p className="text-[var(--text-secondary)] mt-2">Signa Authentic Accreditation System</p>
+            <p className="text-[var(--text-secondary)] mt-2">{APP_NAME} Authentic Accreditation System</p>
           </div>
 
           <div className="glass-card p-8 sm:p-12 relative overflow-hidden border-2 shadow-2xl transition-all duration-300"
@@ -109,7 +110,7 @@ export default function VerifyCertificatePage() {
             
             <div className="mt-10 text-center">
               <Link href="/" className="text-sm font-bold text-[var(--primary)] hover:underline">
-                Learn more about Signa
+                Learn more about {APP_NAME}
               </Link>
             </div>
           </div>

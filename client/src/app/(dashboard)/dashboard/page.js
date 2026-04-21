@@ -15,6 +15,7 @@ import {
 } from "react-icons/hi2";
 import { IoGridOutline } from "react-icons/io5";
 import { motion } from "framer-motion";
+import { APP_NAME } from "@/lib/constants";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -73,7 +74,7 @@ export default function DashboardPage() {
         {/* Header Greeting */}
         <div className="mb-10">
           <h1 className="text-3xl sm:text-4xl font-extrabold mb-2" style={{ color: "var(--text-primary)" }}>
-            Welcome back, {user.name.split(" ")[0]}! 👋
+            Welcome to {APP_NAME}, {user.name.split(" ")[0]}! 👋
           </h1>
           <p className="text-lg" style={{ color: "var(--text-secondary)" }}>
             Ready to continue your sign language journey?

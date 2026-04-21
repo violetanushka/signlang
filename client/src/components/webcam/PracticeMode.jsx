@@ -24,6 +24,8 @@ export default function PracticeMode({ targetGesture, onComplete }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [stability, setStability] = useState(0);
   const [landmarkCount, setLandmarkCount] = useState(0);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
   
   const { prediction, evaluateGesture, error: predictError } = useGesturePredictor();
   const evaluationCompleteRef = useRef(false);
@@ -49,11 +51,17 @@ export default function PracticeMode({ targetGesture, onComplete }) {
   const handleLandmarks = async (landmarks) => {
     if (!isActive || !targetGesture || passed || evaluationCompleteRef.current) return;
 
+    if (!cameraReady) {
+      setDetectedText("Camera Off");
+      setFeedback("Camera Off");
+      return;
+    }
+
     setLandmarkCount(landmarks ? landmarks.length : 0);
 
     if (!landmarks) {
-      setFeedback("No hand detected");
-      setDetectedText("No hand detected");
+      setFeedback("Show your hand");
+      setDetectedText("Show your hand");
       setIsWrong(false);
       setIsCorrect(false);
       setStability(0);
@@ -254,7 +262,24 @@ export default function PracticeMode({ targetGesture, onComplete }) {
           isActive={isActive} 
           onLandmarks={handleLandmarks} 
           showOverlay={true}
+          onCameraReady={setCameraReady}
+          onCameraError={setCameraError}
         />
+
+        {/* Fallback UI Messages */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
+          {cameraError && (
+            <div className="text-red-500 text-center bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-red-500/50 font-bold">
+              Camera not available. Please allow access or turn it on.
+            </div>
+          )}
+
+          {!cameraError && !cameraReady && (
+            <div className="text-yellow-500 text-center bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-yellow-500/50 font-bold">
+              Starting camera...
+            </div>
+          )}
+        </div>
 
         {/* Step 5: AI Mode Indicator */}
         <div className="absolute top-4 right-4 z-20 pointer-events-none">

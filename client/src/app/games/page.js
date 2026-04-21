@@ -4,6 +4,7 @@ import Link from "next/link";
 import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
 import { HiOutlinePuzzlePiece, HiOutlineBolt, HiOutlineQuestionMarkCircle } from "react-icons/hi2";
+import { APP_NAME } from "@/lib/constants";
 
 export default function GamesHubPage() {
   const games = [
@@ -45,7 +46,7 @@ export default function GamesHubPage() {
         <div className="text-center mb-12 max-w-2xl mx-auto">
           <div className="text-6xl mb-6 drop-shadow-lg">🎮</div>
           <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
-            Signa Arcade
+            {APP_NAME} Arcade
           </h1>
           <p className="text-lg text-[var(--text-secondary)]">
             Practice American Sign Language through engaging minigames. Earn points, build streaks, and master the alphabet faster!

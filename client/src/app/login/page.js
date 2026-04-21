@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { HiOutlineEnvelope, HiOutlineLockClosed, HiOutlineEye, HiOutlineEyeSlash } from "react-icons/hi2";
+import { APP_NAME } from "@/lib/constants";
 
 export default function LoginPage() {
   const { login, error, setError } = useAuth();
@@ -47,11 +48,11 @@ export default function LoginPage() {
                 className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-lg"
                 style={{ background: "linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)" }}
               >
-                S
+                SB
               </div>
             </Link>
             <h1 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-              Welcome back
+              Welcome to {APP_NAME}
             </h1>
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
               Sign in to continue your learning journey

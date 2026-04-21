@@ -8,6 +8,6 @@ echo Starting Frontend Dev Server (Port 3000)...
 start "Frontend Client" cmd /k "cd client && npm install && npm run dev"
 
 echo Starting AI Service (Port 8000)...
-start "AI Service" cmd /k "cd ai-service && pip install -r requirements.txt && python api.py"
+start "AI Service" cmd /k "cd ai-service && pip install -r requirements.txt && uvicorn api:app --reload --port 8000"
 
 echo All services are starting up in separate windows!

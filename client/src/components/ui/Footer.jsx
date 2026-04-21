@@ -5,6 +5,8 @@ import {
   IoLogoLinkedin,
   IoHeart,
 } from "react-icons/io5";
+import { APP_NAME } from "@/lib/constants";
+import Logo from "@/components/ui/Logo";
 
 const footerLinks = {
   Platform: [
@@ -46,20 +48,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-2.5 mb-4">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg"
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)",
-                }}
-              >
-                S
-              </div>
-              <span className="text-xl font-bold text-white tracking-tight">
-                Signa
-              </span>
-            </div>
+            <Logo />
             <p className="text-sm leading-relaxed max-w-sm mb-6" style={{ color: "rgba(255,255,255,0.5)" }}>
               Learn sign language with AI-powered real-time gesture recognition.
               Accessible, gamified, and designed for everyone — from age 5 to 95.
@@ -111,7 +100,7 @@ export default function Footer() {
           style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}
         >
           <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
-            &copy; {new Date().getFullYear()} Signa. All rights reserved.
+            &copy; {new Date().getFullYear()} {APP_NAME}. All rights reserved.
           </p>
           <p
             className="text-xs flex items-center gap-1"

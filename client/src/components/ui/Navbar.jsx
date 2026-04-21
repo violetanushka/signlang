@@ -16,6 +16,8 @@ import {
   IoLanguageOutline,
   IoGridOutline,
 } from "react-icons/io5";
+import { APP_NAME } from "@/lib/constants";
+import Logo from "@/components/ui/Logo";
 
 const navLinks = [
   { href: "/courses", label: "Courses", icon: HiOutlineAcademicCap },
@@ -49,28 +51,7 @@ export default function Navbar() {
       }}
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 group"
-          aria-label="Signa Home"
-        >
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md transition-transform group-hover:scale-110"
-            style={{
-              background:
-                "linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)",
-            }}
-          >
-            S
-          </div>
-          <span
-            className="text-xl font-bold tracking-tight hidden sm:block"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Signa
-          </span>
-        </Link>
+        <Logo />
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-1">

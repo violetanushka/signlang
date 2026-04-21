@@ -1,0 +1,9 @@
+{
+  "name": "signlangv2-root",
+  "version": "1.0.0",
+  "description": "Root orchestrator for Signa Sign Language Platform",
+  "scripts": {
+    "start": "node start-dev.js",
+    "dev": "node start-dev.js"
+  }
+}

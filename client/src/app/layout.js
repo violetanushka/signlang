@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata = {
-  title: "Signa — AI Sign Language Learning",
-  description: "Learn sign language with AI-powered real-time gesture recognition. Accessible, gamified, and fun for everyone.",
+  title: "SignBridge — AI Sign Language Learning",
+  description: "AI-powered sign language learning platform. Learn sign language with real-time gesture recognition.",
   viewport: "width=device-width, initial-scale=1",
 };
 
@@ -20,8 +20,8 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${inter.variable} h-full`} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="description" content="Learn sign language with AI-powered real-time gesture recognition. Accessible, gamified, and fun for everyone." />
-        <title>Signa — AI Sign Language Learning</title>
+        <meta name="description" content="AI-powered sign language learning platform. Learn sign language with real-time gesture recognition." />
+        <title>SignBridge — AI Sign Language Learning</title>
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body className="min-h-full flex flex-col font-sans">

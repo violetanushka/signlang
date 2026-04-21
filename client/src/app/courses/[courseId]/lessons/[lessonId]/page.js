@@ -63,7 +63,15 @@ export default function LessonWrapperPage() {
     );
   }
 
-  if (!course || !currentLesson) return null;
+  // Issue 6: never silently crash — show a clear loading message if data is missing
+  if (!course || !currentLesson) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-[var(--bg-primary)]">
+        <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+        <p className="text-[var(--text-secondary)] font-medium">Loading lesson...</p>
+      </div>
+    );
+  }
 
   // Find next lesson ID for the "Next" button
   const currentIndex = lessons.findIndex((l) => l._id === currentLesson._id);

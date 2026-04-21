@@ -10,8 +10,8 @@ let isMediaPipeInitializing = false;
  * @param {Function} onLandmarks - callback for real-time landmark updates (prevents re-render loops)
  */
 export default function useMediaPipe(videoRef, isRunning = true, onLandmarks = null) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [error, setError] = useState(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
   
   // Landmarks are now stored in a Ref to avoid high-frequency re-renders
   const landmarksRef = useRef(null);
@@ -28,7 +28,6 @@ export default function useMediaPipe(videoRef, isRunning = true, onLandmarks = n
 
     // STEP 1: THROTTLE UPDATES (Only update every 100ms for heavy processing)
     const now = Date.now();
-    // For local logic, we can go faster if needed, but 100ms is stable.
     if (now - lastUpdateRef.current < 100) return;
 
     let newLandmarks = null;
@@ -38,8 +37,6 @@ export default function useMediaPipe(videoRef, isRunning = true, onLandmarks = n
         newLandmarks = lms.slice(0, 21);
       }
     }
-
-    console.log("LANDMARK COUNT:", newLandmarks?.length);
 
     // STEP 2: UPDATE REF (NO STATE UPDATE = NO RENDER LOOP)
     landmarksRef.current = newLandmarks;
@@ -104,42 +101,51 @@ export default function useMediaPipe(videoRef, isRunning = true, onLandmarks = n
         handsRef.current = hands;
 
         // --- 2. Initialize Native WebCam Stream ---
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error("Browser API navigator.mediaDevices.getUserMedia not available");
+        async function startCamera() {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: { 
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                facingMode: "user" 
+              },
+              audio: false
+            });
+
+            if (videoRef.current) {
+              streamRef.current = stream;
+              videoRef.current.srcObject = stream;
+              
+              videoRef.current.onloadeddata = () => {
+                setCameraReady(true);
+              };
+
+              await videoRef.current.play();
+            }
+          } catch (err) {
+            console.error("Camera error:", err);
+            setCameraError("Camera access denied or not available");
+            throw err;
+          }
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-            facingMode: "user"
-          },
-          audio: false,
-        });
-        
-        streamRef.current = stream;
-        videoRef.current.srcObject = stream;
-        
-        // Wait for video to be physically ready to play
-        await new Promise((resolve) => {
-          videoRef.current.onloadedmetadata = () => {
-             resolve();
-          };
-        });
-        
-        videoRef.current.play();
+        await startCamera();
 
         // --- 3. Start Processing Loop ---
         const processFrame = async () => {
           if (!isRunning || !isComponentMounted.current || !handsRef.current || !videoRef.current) return;
           
-          if (videoRef.current.readyState >= 2) {
-            try {
-              // Send the current video frame to MediaPipe
-              await handsRef.current.send({ image: videoRef.current });
-            } catch (e) {
-              // Ignore safe transient read errors on rapid unmounts
-            }
+          // STEP 2 — HANDLE VIDEO NOT READY
+          if (!videoRef.current || videoRef.current.readyState < 2) {
+            animationFrameIdRef.current = requestAnimationFrame(processFrame);
+            return;
+          }
+
+          try {
+            // Send the current video frame to MediaPipe
+            await handsRef.current.send({ image: videoRef.current });
+          } catch (e) {
+            // Ignore safe transient read errors on rapid unmounts
           }
           
           // Loop
@@ -149,14 +155,11 @@ export default function useMediaPipe(videoRef, isRunning = true, onLandmarks = n
         // Start the recursively calling loop
         processFrame();
         
-        if (isComponentMounted.current) {
-          setIsLoaded(true);
-          console.log("[useMediaPipe] Native Camera & Hands ready.");
-        }
+        console.log("[useMediaPipe] Native Camera & Hands ready.");
       } catch (err) {
         console.error("[useMediaPipe] Setup Error:", err);
         if (isComponentMounted.current) {
-          setError(err.message || "Failed to access Native Camera or load models.");
+          setCameraError(err.message || "Failed to access Native Camera or load models.");
         }
       } finally {
         isMediaPipeInitializing = false;
@@ -193,9 +196,9 @@ export default function useMediaPipe(videoRef, isRunning = true, onLandmarks = n
         handsRef.current = null;
       }
       
-      setIsLoaded(false);
+      setCameraReady(false);
     };
   }, [videoRef, isRunning]); 
 
-  return { isLoaded, landmarks: landmarksRef.current, error };
+  return { cameraReady, landmarks: landmarksRef.current, cameraError };
 }

@@ -17,6 +17,7 @@ import {
   HiOutlineCheckCircle,
 } from "react-icons/hi2";
 import { IoGameControllerOutline } from "react-icons/io5";
+import { APP_NAME } from "@/lib/constants";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -77,13 +78,13 @@ const testimonials = [
   {
     name: "Sarah M.",
     role: "Parent",
-    text: "My 6-year-old daughter loves learning sign language with Signa! The animations and games keep her engaged for hours.",
+    text: `My 6-year-old daughter loves learning sign language with ${APP_NAME}! The animations and games keep her engaged for hours.`,
     rating: 5,
   },
   {
     name: "Dr. James K.",
     role: "Educator",
-    text: "The AI feedback system is remarkably accurate. I recommend Signa to all my students studying ASL.",
+    text: `The AI feedback system is remarkably accurate. I recommend ${APP_NAME} to all my students studying ASL.`,
     rating: 5,
   },
   {
@@ -159,7 +160,7 @@ export default function HomePage() {
                       "linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)",
                   }}
                 >
-                  with AI
+                  with {APP_NAME}
                 </span>
               </motion.h1>
 
